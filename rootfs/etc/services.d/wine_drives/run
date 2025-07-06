@@ -1,0 +1,13 @@
+#!/bin/sh
+
+set -e # Exit immediately if a command exits with a non-zero status.
+set -u # Treat unset variables as an error.
+
+find "$WINEPREFIX"/dosdevices/ -type l -name "*::" | while read DRV
+do
+    DRV_LETTER="$(basename "$DRV" | tr -d ':')"
+    echo "mounting drive $DRV_LETTER:..."
+    "$WINEPREFIX"/drive_c/windows/add_drive.exe "$DRV_LETTER"
+done
+
+# vim:ft=sh:ts=4:sw=4:et:sts=4
