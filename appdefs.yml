@@ -1,0 +1,99 @@
+---
+
+#
+# Definitions for ImgBurn docker container.
+#
+# This file is used as data source to generate README.md and unRAID template files
+# from Jinja2 templates.
+#
+
+app:
+  id: x
+  name: imgburn
+  friendly_name: ImgBurn
+  gui_type: x11
+  base_os: alpine
+  project:
+    description: |-
+      ImgBurn is a lightweight CD / DVD / HD DVD / Blu-ray burning application
+      that everyone should have in their toolkit!
+      ImgBurn is a lightweight CD/DVD/Blu-ray burning application that supports
+      creating, writing, and verifying disc images. It handles a wide range of
+      image formats and offers advanced options for precise control over the
+      burning process.
+    url: https://www.imgburn.com
+  unraid:
+    #support_url: https://forums.unraid.net/topic/XXXXX-support-imgburn/
+    category: "MediaApp:Other Tools:"
+  documentation:
+    sections:
+      - title: Access to Optical Drives
+        level: 2
+        content: |-
+          By default, a Docker container does not have access to host's devices. However,
+          access to one or more devices can be granted with the `--device DEV` parameter
+          of the `docker run` command.
+
+          In Linux, optical drives are represented by device files named `/dev/srX`, where
+          `X` is a number (e.g., `/dev/sr0` for the first drive, `/dev/sr1` for the
+          second, etc). To allow {{ app.friendly_name }} to access the first drive, use
+          this parameter:
+
+          ```
+          --device /dev/sr0
+          ```
+
+          To identify the correct Linux devices to expose, check the container's log
+          during startup. Look for messages like:
+          ```
+          [cont-init   ] 54-check-optical-drive.sh: looking for usable optical drives...
+          [cont-init   ] 54-check-optical-drive.sh: found optical drive 'hp HLDS DVDRW GUD1N LD02' [/dev/sr0]
+          [cont-init   ] 54-check-optical-drive.sh:   [ OK ]   associated SCSI CD-ROM (sr) device detected: /dev/sr0.
+          [cont-init   ] 54-check-optical-drive.sh:   [ ERR ]  the host device /dev/sr0 is not exposed to the container.
+          [cont-init   ] 54-check-optical-drive.sh: no usable optical drives found.
+          ```
+
+          This indicates that `/dev/sr0` needs to be exposed to the container.
+
+          > [!TIP]
+          > View the container’s log by running `docker logs <container_name>`.
+
+          Alternatively, identify Linux devices from the host by running:
+
+          ```
+          lsscsi -k
+          ```
+
+          The output's last column for an optical drive indicates the device to expose.
+          The following example shows that `/dev/sr0` should be exposed:
+
+          ```
+          [0:0:0:0]    disk    ATA      SanDisk SSD PLUS 9100  /dev/sda
+          [1:0:0:0]    disk    ATA      SanDisk SSD PLUS 9100  /dev/sdb
+          [2:0:0:0]    disk    ATA      ST3500418AS      HP34  /dev/sdc
+          [4:0:0:0]    cd/dvd  hp HLDS  DVDRW  GUD1N     LD02  /dev/sr0
+          ```
+  changelog:
+    - version: 25.07.1
+      date: 2025-07-06
+      changes:
+        - 'Initial release.'
+
+container:
+  storage_permissions: rw
+
+  # Environment variables.
+  environment_variables: []
+
+  # Volumes
+  volumes: []
+
+  # Network ports
+  ports: []
+
+  # Devices
+  devices:
+    - path: /dev/sr0
+      description: >-
+        Linux device file corresponding to the optical drive.
+      include_in_quick_start: true
