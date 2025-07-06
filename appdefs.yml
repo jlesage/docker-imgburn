@@ -8,7 +8,7 @@
 #
 
 app:
-  id: x
+  id: 31
   name: imgburn
   friendly_name: ImgBurn
   gui_type: x11
