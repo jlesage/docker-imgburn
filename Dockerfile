@@ -59,6 +59,9 @@ RUN \
     add-pkg \
         gnutls \
         wine \
+        # For opening audio files.
+        gst-plugins-good \
+        gst-plugins-bad \
         # For optical drive listing.
         lsscsi
 
