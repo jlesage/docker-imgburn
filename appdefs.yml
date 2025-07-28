@@ -74,6 +74,11 @@ app:
           [4:0:0:0]    cd/dvd  hp HLDS  DVDRW  GUD1N     LD02  /dev/sr0
           ```
   changelog:
+    - version: 25.07.2
+      date: 2025-07-27
+      changes:
+        - 'ImgBurn can now process audio files.'
+        - 'Updated baseimage to version 4.9.0.'
     - version: 25.07.1
       date: 2025-07-06
       changes:
