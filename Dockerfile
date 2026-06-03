@@ -9,7 +9,7 @@ ARG DOCKER_IMAGE_VERSION=
 
 # Define software versions.
 ARG IMGBURN_VERSION=2.5.8.0
-ARG WINETRICKS_VERSION=20250102
+ARG WINETRICKS_VERSION=20260125
 
 # Define software download URLs.
 ARG IMGBURN_URL=https://download.imgburn.com/SetupImgBurn_${IMGBURN_VERSION}.exe
