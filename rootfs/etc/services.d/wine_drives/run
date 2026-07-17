@@ -6,8 +6,10 @@ set -u # Treat unset variables as an error.
 find "$WINEPREFIX"/dosdevices/ -type l -name "*::" | while read DRV
 do
     DRV_LETTER="$(basename "$DRV" | tr -d ':')"
-    echo "mounting drive $DRV_LETTER:..."
-    "$WINEPREFIX"/drive_c/windows/add_drive.exe "$DRV_LETTER"
+    # Target of d:: (e.g. /dev/sr0). Must be passed to MountMgr or the symlink is cleared.
+    DRV_DEVICE="$(readlink "$DRV")"
+    echo "mounting drive $DRV_LETTER: ($DRV_DEVICE)..."
+    "$WINEPREFIX"/drive_c/windows/add_drive.exe "$DRV_LETTER" "$DRV_DEVICE"
 done
 
 # vim:ft=sh:ts=4:sw=4:et:sts=4

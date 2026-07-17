@@ -2,8 +2,15 @@
  *
  * Program that adds a CD-ROM drive via MountMgr.
  *
- * Note that the proper symlink should be under dosdevices. For example,
- * "$WINEPREFIX/dosdevices/d::" should point to "/dev/sr0".
+ * The device symlink under dosdevices should already exist. For example,
+ * "$WINEPREFIX/dosdevices/d::" should point to "/dev/sr0". That device path
+ * must be passed to MountMgr; otherwise DEFINE_UNIX_DRIVE clears the d::
+ * symlink.
+ *
+ * The mount point is left empty on purpose: mapping "/" (or any real path) as
+ * d: makes Wine expose that path as a DOS drive. For raw optical tools such as
+ * ImgBurn only d:: (the Unix device) is needed; a d: -> / mapping has been
+ * observed to crash ImgBurn.
  *
  * See https://github.com/wine-mirror/wine/blob/stable/programs/winecfg/drive.c
  */
@@ -26,43 +33,49 @@ static HANDLE open_mountmgr(void)
     return ret;
 }
 
-static void add_drive(char drive_letter, const char *unixpath)
+static void add_drive(char drive_letter, const char *device)
 {
     HANDLE mgr;
     DWORD len;
     DWORD type = DRIVE_CDROM;
     struct mountmgr_unix_drive *ioctl;
+    /* Empty mount point: MountMgr still registers the CD-ROM and keeps d::,
+     * but does not create a d: symlink to a filesystem path. */
+    const char *mount_point = "";
 
     if ((mgr = open_mountmgr()) == INVALID_HANDLE_VALUE) return;
 
     len = sizeof(*ioctl);
-    len += strlen(unixpath) + 1;
+    len += strlen(mount_point) + 1;
+    len += strlen(device) + 1;
 
     if (!(ioctl = malloc(len)))
     {
         printf("failed to alloc memory for ioctl\n");
-    	CloseHandle(mgr);
+        CloseHandle(mgr);
         exit(1);
     }
 
     ioctl->size = len;
     ioctl->letter = drive_letter;
-    ioctl->device_offset = 0;
     ioctl->type = type;
 
     char *ptr = (char *)(ioctl + 1);
-    strcpy(ptr, unixpath);
+    strcpy(ptr, mount_point);
     ioctl->mount_point_offset = ptr - (char *)ioctl;
+    ptr += strlen(ptr) + 1;
+    strcpy(ptr, device);
+    ioctl->device_offset = ptr - (char *)ioctl;
 
     if (DeviceIoControl(mgr, IOCTL_MOUNTMGR_DEFINE_UNIX_DRIVE, ioctl, len, NULL, 0, NULL, NULL))
     {
-        printf("set drive %c: to %s type %lu\n", drive_letter,
-                    wine_dbgstr_a(unixpath), type);
+        printf("set drive %c: device %s type %lu\n", drive_letter,
+                    wine_dbgstr_a(device), type);
     }
     else
     {
-        printf("failed to set drive %c: to %s type %lu err %lu\n", drive_letter,
-                wine_dbgstr_a(unixpath), type, GetLastError());
+        printf("failed to set drive %c: device %s type %lu err %lu\n", drive_letter,
+                wine_dbgstr_a(device), type, GetLastError());
     }
     free(ioctl);
     CloseHandle(mgr);
@@ -70,7 +83,7 @@ static void add_drive(char drive_letter, const char *unixpath)
 
 static void usage(void)
 {
-    printf("Usage: add_cdrom_drive drive_letter\n"
+    printf("Usage: add_drive drive_letter device_path\n"
            "Add a CD-ROM drive via MountMgr.\n");
 }
 
@@ -78,7 +91,7 @@ int main(int argc, char** argv)
 {
     char drive_letter = '\0';
 
-    if (argc != 2)
+    if (argc != 3)
     {
         usage();
         exit(1);
@@ -104,7 +117,7 @@ int main(int argc, char** argv)
         exit(1);
     }
 
-    add_drive(drive_letter, "/");
+    add_drive(drive_letter, argv[2]);
 
     exit(0);
 }

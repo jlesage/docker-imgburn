@@ -68,11 +68,12 @@ su-exec app wineserver -w
 # Create optical drive(s) under DosDevices.
 # NOTE: Drives will be mounted later via MountMgr.
 DRV_NUM=0
-lsscsi -k | grep -w "cd/dvd" | tr -s ' ' | while read -r DRV
+lsscsi -k | grep -w "cd/dvd" | tr -s ' ' | awk '{print $NF}' | while read -r SR_DEV
 do
-    SR_DEV="$(echo "$DRV" | rev | awk '{print $1}' | rev)"
-    ln -sf "$SR_DEV" /opt/ImgBurn/dosdevices/"$(echo "$DRV_NUM" | tr '0123456789' 'defghijklm')::"
-    DRV_NUM="$(expr "$DRV_NUM" + 1)"
+    DRV_LETTER="$(echo "$DRV_NUM" | tr '0123456789' 'defghijklm')"
+    echo "creating drive $DRV_LETTER: for $SR_DEV..."
+    ln -sf "$SR_DEV" "$WINEPREFIX/dosdevices/$DRV_LETTER::"
+    DRV_NUM="$((DRV_NUM + 1))"
     [ "$DRV_NUM" -le 9 ] || break
 done
 
