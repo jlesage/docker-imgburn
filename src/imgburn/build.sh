@@ -74,9 +74,11 @@ su-exec app winetricks fontsmooth=rgb
 # Install Verdana font.
 su-exec app winetricks fonts verdana
 
-# Create symlink for the temporary directory.
+# Create symlink for the temporary directories.
 rm -r "$WINEPREFIX"/drive_c/users/app/AppData/Local/Temp
+rm -r "$WINEPREFIX"/drive_c/windows/temp
 ln -s /tmp "$WINEPREFIX"/drive_c/users/app/AppData/Local/Temp
+ln -s /tmp "$WINEPREFIX"/drive_c/windows/temp
 
 # Languages are stored outside the container because language packs are
 # install by user.
@@ -87,10 +89,10 @@ rm "$WINEPREFIX"/winetricks.log
 
 chown -R root:root "$WINEPREFIX"
 
-# Move registry files.
+# Persist Wine registry defaults outside the container. At runtime, cont-init
+# installs these into a user-owned WINEPREFIX under /config (the image template
+# stays root-owned so the container can run with a read-only root filesystem).
 mkdir /defaults
 for regfpath in "$WINEPREFIX"/*.reg; do
-    regfname="$(basename "$regfpath")"
     mv -v "$regfpath" /defaults/
-    ln -s /tmp/"$regfname" "$regfpath"
 done

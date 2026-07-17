@@ -3,6 +3,10 @@
 set -e # Exit immediately if a command exits with a non-zero status.
 set -u # Treat unset variables as an error.
 
+# Read-only template built into the image. Not used as WINEPREFIX at runtime so
+# the image can stay root-owned and the container can run with a read-only rootfs.
+WINE_TEMPLATE=/opt/ImgBurn
+
 # Make sure required directories exist.
 mkdir -p \
     /config/"Graph Data Files" \
@@ -14,15 +18,35 @@ mkdir -p \
 # Install default configuration file.
 [ -f /config/ImgBurn.ini ] || cp -v /defaults/ImgBurn.ini /config/ImgBurn.ini
 
+#
+# Build a user-owned runtime WINEPREFIX.
+#
+# Wine only requires the top-level prefix directory to be owned by the user
+# running it. Point WINEPREFIX at a writable location and link the static bulk
+# from the image template so we never need to chown /opt/ImgBurn.
+#
+# Use /config (not /tmp): Docker's default tmpfs for /tmp is noexec, and Wine
+# cannot map PE sections with PROT_EXEC from a noexec filesystem (page fault).
+#
+rm -rf "$WINEPREFIX"
+mkdir "$WINEPREFIX"
+
 # Copy registry files.
 for F in user.reg system.reg userdef.reg; do
-    cp -v /defaults/"$F" /tmp/
-    chown "$USER_ID:$GROUP_ID" /tmp/"$F"
+    cp -v /defaults/"$F" "$WINEPREFIX"/
 done
 
-# Wine requires the WINEPREFIX directory to be owned by the user running the
-# Windows app.
-chown "$USER_ID:$GROUP_ID" "$WINEPREFIX"
+# Copy the timestamp to avoid update of the prefix.
+cp -a "$WINE_TEMPLATE/.update-timestamp" "$WINEPREFIX/.update-timestamp"
+
+# Link the read-only drive_c from the image template.
+ln -sfn "$WINE_TEMPLATE/drive_c" "$WINEPREFIX/drive_c"
+
+# Copy dosdevices so it stays writable: optical drive symlinks are added below.
+cp -a "$WINE_TEMPLATE/dosdevices" "$WINEPREFIX/dosdevices"
+
+# Take ownership of the prefix.
+chown -R "$USER_ID:$GROUP_ID" "$WINEPREFIX"
 
 # Enable CJK font in Wine if needed. Otherwise set Verdana as default font.
 if is-bool-val-true "${ENABLE_CJK_FONT:-0}"; then
