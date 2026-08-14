@@ -46,7 +46,7 @@ RUN if [ "$TARGETPLATFORM" != "linux/386" ]; then \
 RUN /build/build.sh "$IMGBURN_URL" "$IMGBURN_SHA256"
 
 # Pull base image.
-FROM jlesage/baseimage-gui:alpine-3.22-v4.13.1
+FROM jlesage/baseimage-gui:alpine-3.22-v4.13.2
 
 ARG IMGBURN_VERSION
 ARG DOCKER_IMAGE_VERSION
